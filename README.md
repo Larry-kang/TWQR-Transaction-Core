@@ -1,7 +1,7 @@
 # TWQR Transaction Core (Payment Gateway)
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Larry-kang/TWQR-Transaction-Core)
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple)](https://dotnet.microsoft.com/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-blue)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
@@ -16,6 +16,23 @@
 
 ---
 
+## 📘 Current Status & Specifications
+
+The repository is currently an **early PoC / implementation baseline**. The target architecture and delivery plan are defined in the project specifications:
+
+- [Payment Platform Specifications](./docs/specs/README.md)
+- [Product Scope & System Context](./docs/specs/01-product-scope-system-context.md)
+- [Payment Domain](./docs/specs/03-payment-domain.md)
+- [Wallet & Ledger](./docs/specs/04-wallet-ledger.md)
+- [Reliability / Async / Idempotency](./docs/specs/05-reliability-async-idempotency.md)
+- [Settlement & Reconciliation](./docs/specs/06-settlement-reconciliation.md)
+- [Delivery Roadmap](./docs/specs/08-delivery-roadmap.md)
+
+> README sections below describe the original PoC vision and may be ahead of the current implementation.  
+> New implementation work should follow the reviewed specifications above.
+
+---
+
 <p align="center">
   <a href="#english-description">🇺🇸 English Description</a> | <a href="#chinese-description">🇹🇼 繁體中文介紹</a>
 </p>
@@ -24,7 +41,7 @@
 
 <h2 id="english-description">🇺🇸 English Description</h2>
 
-> **High-Reliability Payment Simulation Engine adhering to TWQR (Taiwan QR Code) Standards.**
+> **High-Reliability Payment Platform Reference System for Taiwan QR payment scenarios.**
 >
 > This project serves as a reference implementation for a **Fault-Tolerant Payment Gateway**, demonstrating how to handle **Idempotency**, **Concurrency**, and **Distributed Transactions** in a high-throughput financial system.
 
@@ -86,7 +103,7 @@ sequenceDiagram
 
 ### 🛠 Tech Stack
 
-* **Core Framework:** .NET 8 (ASP.NET Core Web API)
+* **Core Framework:** .NET 10 (ASP.NET Core Web API)
 * **Database:** Entity Framework Core (SQL Server / PostgreSQL)
 * **Caching & Locking:** Redis
 * **Architecture:** Clean Architecture (Domain, Application, Infrastructure, API)
@@ -110,8 +127,8 @@ Access Swagger UI at: `http://localhost:5000/swagger`
 
 <h2 id="chinese-description">🇹🇼 繁體中文介紹</h2>
 
-> **符合 TWQR 標準的高可靠性支付核心模擬**
-> 本專案展示了在分散式金融系統中，如何透過 **.NET 8** 實作 **冪等性 (Idempotency)**、**狀態機 (Finite State Machine)** 與 **高併發控制**，解決真實支付場景中的工程難題。
+> **台灣 QR 支付情境的高可靠性支付平台示範系統**
+> 本專案展示了在分散式金融系統中，如何透過 **.NET 10** 實作 **冪等性 (Idempotency)**、**狀態機 (Finite State Machine)** 與 **高併發控制**，解決真實支付場景中的工程難題。
 
 ### 核心解決問題 (Key Solutions)
 
