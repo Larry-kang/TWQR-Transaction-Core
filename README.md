@@ -10,7 +10,7 @@
 > This project is a **Concept Proof (PoC)** demonstrating distributed system architecture (Idempotency, State Machine, Concurrency Control) using modern .NET technologies.
 >
 > * This project is **NOT** affiliated with, endorsed by, or connected to **FISC (Financial Information Service Co., Ltd.)** or **iPASS Corporation**.
-> * The "TWQR" term is used solely to describe the compliance with public QR payment standards context.
+> * The "TWQR" term is used solely to describe public Taiwan QR payment scenarios and publicly available standards context.
 > * All logic is implemented based on **general software engineering principles** and **publicly available documentation**, not proprietary source code.
 > * No real money or financial transactions are processed.
 
