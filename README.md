@@ -1,184 +1,40 @@
-# TWQR Transaction Core (Payment Gateway)
+# TWQR Transaction Core
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Larry-kang/TWQR-Transaction-Core)
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple)](https://dotnet.microsoft.com/)
-[![Docker](https://img.shields.io/badge/Docker-Enabled-blue)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+個人支付系統 POC／實作基礎，以公開 QR 支付情境與一般工程原則探索交易可靠性。
 
-> ⚠️ **DISCLAIMER: Educational Purpose Only**
->
-> This project is a **Concept Proof (PoC)** demonstrating distributed system architecture (Idempotency, State Machine, Concurrency Control) using modern .NET technologies.
->
-> * This project is **NOT** affiliated with, endorsed by, or connected to **FISC (Financial Information Service Co., Ltd.)** or **iPASS Corporation**.
-> * The "TWQR" term is used solely to describe public Taiwan QR payment scenarios and publicly available standards context.
-> * All logic is implemented based on **general software engineering principles** and **publicly available documentation**, not proprietary source code.
-> * No real money or financial transactions are processed.
+## 作品定位與本人貢獻
 
----
+公開框架由 AI 協作建立。Larry 透過與 AI 討論提出需求、釐清規格與工程議題；此公開作品與公司正式 TWQR 系統分開呈現，不作為本人獨立手寫或完整維護所有功能的證明。
 
-## 📘 Current Status & Specifications
+專案目前屬早期 POC。既有程式為實作基礎，規格中部分能力仍屬規劃；下列議題與目標不表示全部完成、已通過測試或具正式環境使用規模。完成範圍應以實際程式碼及驗證結果為準。
 
-The repository is currently an **early PoC / implementation baseline**. The target architecture and delivery plan are defined in the project specifications:
+## 現有基礎與規格
 
-- [Payment Platform Specifications](./docs/specs/README.md)
-- [Product Scope & System Context](./docs/specs/01-product-scope-system-context.md)
-- [Payment Domain](./docs/specs/03-payment-domain.md)
-- [Wallet & Ledger](./docs/specs/04-wallet-ledger.md)
-- [Reliability / Async / Idempotency](./docs/specs/05-reliability-async-idempotency.md)
-- [Settlement & Reconciliation](./docs/specs/06-settlement-reconciliation.md)
-- [Delivery Roadmap](./docs/specs/08-delivery-roadmap.md)
+目前以 C#／.NET 10 與分層專案骨架為基礎，程式與測試入口可由下列目錄查閱：
 
-> README sections below describe the original PoC vision and may be ahead of the current implementation.  
-> New implementation work should follow the reviewed specifications above.
+- [src](src/)
+- [tests/TWQR.UnitTests](tests/TWQR.UnitTests/)
+- [Payment Platform Specifications](docs/specs/README.md)
+- [Delivery Roadmap](docs/specs/08-delivery-roadmap.md)
 
----
+本介紹未對各功能完成度、建置結果、測試通過或效能作出額外承諾。
 
-<p align="center">
-  <a href="#english-description">🇺🇸 English Description</a> | <a href="#chinese-description">🇹🇼 繁體中文介紹</a>
-</p>
+## 探索與規劃議題
 
----
+- API 冪等性與重複請求防護。
+- 交易狀態、未知外部結果及例外處理。
+- 併發控制、重試與補償。
+- Wallet／Ledger、結算及背景對帳。
+- 依規格逐步推進模組與交付，相關架構方向以目前專案規格為準。
 
-<h2 id="english-description">🇺🇸 English Description</h2>
+Redis、資料庫與部署工具等目標，應分別依規格、程式與可重現的驗證確認，不因列入設計而視為已完成。
 
-> **High-Reliability Payment Platform Reference System for Taiwan QR payment scenarios.**
->
-> This project serves as a reference implementation for a **Fault-Tolerant Payment Gateway**, demonstrating how to handle **Idempotency**, **Concurrency**, and **Distributed Transactions** in a high-throughput financial system.
+## 使用邊界
 
-### 🏗 System Architecture
+本專案為個人學習與概念驗證作品，未經 FISC／財金或 iPASS／一卡通認可或背書。TWQR 名稱僅用於公開支付情境與公開標準脈絡，不包含公司內部程式碼、規格或交易資料，不處理真實金流。
 
-The system is designed with **Eventual Consistency** and **Fail-Safe** mechanisms in mind. Below is the simplified transaction flow dealing with potential "Double-Spending" and upstream timeouts.
+## 作者
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as Payment Gateway (Idempotency Layer)
-    participant Core as Transaction Core (FSM)
-    participant DB as SQL Database
-    participant Bank as Upstream Bank (Simulator)
+Larry Kang — C#／.NET 後端與電子支付工作經驗；公開 POC 以需求／規格討論及 AI 協作推進。
 
-    Note over Client, API: Phase 1: Request Validation
-    Client->>API: POST /api/payment (Header: Idempotency-Key)
-    API->>API: Check Redis Cache for Key
-    alt Key Exists
-        API-->>Client: 200 OK (Return Cached Result)
-    else New Request
-        API->>Core: Initiate Transaction
-        Core->>DB: INSERT Transaction (State: CREATED)
-        
-        Note over Core, Bank: Phase 2: Execution & Locking
-        Core->>DB: Pessimistic Lock / Version Check
-        Core->>Core: Update State: LOCKED
-        Core->>Bank: Call Deduct API
-        
-        alt Bank Success
-            Core->>DB: Update State: COMPLETED
-            API-->>Client: 200 OK (Success)
-        else Bank Timeout / Network Error
-            Core->>DB: Update State: UNKNOWN
-            API-->>Client: 202 Accepted (Processing)
-            Note right of Core: Background Worker will Reconcile later
-        end
-    end
-
-```
-
-### 💡 Key Engineering Challenges Solved
-
-1. **Idempotency (Double-Spending Prevention)**
-* Implemented an **Idempotency Middleware** using Redis.
-* Ensures that network retries do not result in duplicate charges, maintaining strict financial accuracy.
-
-
-2. **Finite State Machine (FSM)**
-* Enforced a strict transaction lifecycle: `CREATED` -> `LOCKED` -> `DEDUCTING` -> `COMPLETED` / `FAILED`.
-* Prevents illegal state transitions (e.g., a `FAILED` transaction cannot unexpectedly become `COMPLETED`).
-
-
-3. **Concurrency Control**
-* Utilized **Optimistic Locking (RowVersion)** to handle high-concurrency scenarios.
-* Prevents Race Conditions where multiple requests attempt to modify the same wallet balance simultaneously.
-
-
-
-### 🛠 Tech Stack
-
-* **Core Framework:** .NET 10 (ASP.NET Core Web API)
-* **Database:** Entity Framework Core (SQL Server / PostgreSQL)
-* **Caching & Locking:** Redis
-* **Architecture:** Clean Architecture (Domain, Application, Infrastructure, API)
-* **Testing:** xUnit, Moq
-* **DevOps:** Docker, Docker Compose
-
-### 🚀 Getting Started
-
-```bash
-# Clone the repository
-git clone [https://github.com/Larry-kang/TWQR-Transaction-Core.git](https://github.com/Larry-kang/TWQR-Transaction-Core.git)
-
-# Run with Docker
-docker-compose up --build
-
-```
-
-Access Swagger UI at: `http://localhost:5000/swagger`
-
----
-
-<h2 id="chinese-description">🇹🇼 繁體中文介紹</h2>
-
-> **台灣 QR 支付情境的高可靠性支付平台示範系統**
-> 本專案展示了在分散式金融系統中，如何透過 **.NET 10** 實作 **冪等性 (Idempotency)**、**狀態機 (Finite State Machine)** 與 **高併發控制**，解決真實支付場景中的工程難題。
-
-### 核心解決問題 (Key Solutions)
-
-#### 1. 防止重複扣款 (Idempotency & Double Spending Prevention)
-
-在行動網路不穩定的環境下，客戶端重試 (Retry) 是常態。本系統實作了 **Idempotency Key** 機制：
-
-* **機制**：API 層透過 Redis 檢查請求的唯一鍵值 (Unique Key)。
-* **效果**：若偵測到重複請求，直接回傳上次的執行結果，而非重新執行扣款，確保 **資金絕對安全**。
-
-#### 2. 交易狀態機設計 (Transaction State Machine)
-
-摒棄脆弱的 `if-else` 狀態判斷，改用嚴格的狀態機模式管理交易生命週期：
-
-* **流程**：`Created (建立)` -> `Locked (圈存)` -> `Deducting (扣款中)` -> `Completed (完成)`。
-* **優勢**：杜絕狀態非法跳躍（例如：失敗的訂單不可直接跳轉為成功），確保帳務邏輯的嚴謹性。
-
-#### 3. 高併發與資產一致性 (Concurrency & Consistency)
-
-針對秒殺或高流量場景，實作 **樂觀鎖 (Optimistic Locking / RowVersion)**：
-
-* **解決痛點**：防止 **Race Condition (競爭條件)** 導致的餘額超扣 (Over-deduction)。
-* **策略**：資料庫層級的版本控制，確保同一時間只有一個請求能修改餘額。
-
-#### 4. 最終一致性與對帳 (Eventual Consistency & Reconciliation)
-
-針對上游銀行 (Upstream Bank) 回應超時 (Timeout) 的情況：
-
-* **設計**：採用 **非同步補單機制**。
-* **實作**：系統會先回傳 `202 Accepted`，並透過後台排程 (Background Worker) 定期向銀行端查詢最終狀態，透過 **沖正 (Reversal)** 或 **補單** 來達成帳務的最終一致性。
-
-### 📂 專案結構 (Clean Architecture)
-
-本專案採用 **洋蔥架構 (Clean Architecture)** 進行分層設計，確保業務邏輯的獨立性與可測試性：
-
-```
-src/
-├── TWQR.Domain/          # 核心業務邏輯、實體 (Entities)、狀態機 (無外部依賴)
-├── TWQR.Application/     # 應用層、Use Cases、DTOs
-├── TWQR.Infrastructure/  # 基礎設施、資料庫實作 (EF Core)、Redis、外部 API 串接
-└── TWQR.WebAPI/          # API 入口、Middleware (冪等性檢核)
-
-```
-
----
-
-## 👤 Author
-
-**Larry Kang**
-
-* **Role:** Senior Backend Engineer | FinTech Specialist
-* **Focus:** Distributed Systems, Payment Architecture, .NET Performance Tuning.
-* **Contact:** [LinkedIn Profile](www.linkedin.com/in/larry-kang)
+[GitHub](https://github.com/Larry-kang) · [LinkedIn](https://www.linkedin.com/in/larry-kang/)
